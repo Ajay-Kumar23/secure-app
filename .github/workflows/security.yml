@@ -1,0 +1,70 @@
+name: Security Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: p/python
+
+
+  dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: "Secure Flask Application"
+          path: "."
+          format: "HTML"
+          out: "reports"
+
+      - name: Upload Dependency Check Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports
+
+
+  docker-security:
+    name: Docker Build and Trivy Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t secure-app:ci .
+
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: secure-app:ci
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: 0
+          ignore-unfixed: true
