@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, render_template, redirect, session
 from flask_bcrypt import Bcrypt
 import sqlite3, logging
@@ -54,4 +55,4 @@ def dashboard():
     return f"Welcome, {session['user']}!"
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host=os.getenv("FLASK_HOST", "127.0.0.1"), port=5000)
